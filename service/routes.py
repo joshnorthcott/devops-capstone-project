@@ -61,6 +61,7 @@ def create_accounts():
 # LIST ALL ACCOUNTS
 ######################################################################
 
+ list-function
     @app.route("/accounts", methods=["GET"])
     def list_accounts():
         """
@@ -73,12 +74,20 @@ def create_accounts():
         app.logger.info("Returning [%s] accounts", len(account_list))
         return jsonify(account_list), status.HTTP_200_OK
         
+=======
+
+
+ main
 
 ######################################################################
 # READ AN ACCOUNT
 ######################################################################
 
+ list-function
     @app.route("/accounts/<int:account_id>", methods=["GET"])
+=======
+    app.route("/accounts/<int:account_id>", methods=["GET"])
+ main
     def get_accounts(account_id):
         """
         Reads an Account

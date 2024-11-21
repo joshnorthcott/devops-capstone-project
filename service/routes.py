@@ -81,7 +81,6 @@ main
 # READ AN ACCOUNT
 ######################################################################
 
-list-function
 @app.route("/accounts/<int:account_id>", methods=["GET"])
 def get_accounts(account_id):
         """

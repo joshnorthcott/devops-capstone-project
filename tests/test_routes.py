@@ -1,6 +1,5 @@
 """
 Account API Service Test Suite
-
 Test cases can be run with the following:
   nosetests -v --with-spec --spec-color
   coverage report -m
@@ -14,11 +13,9 @@ from service.models import db, Account, init_db
 from service.routes import app
 
 DATABASE_URI = os.getenv(
-    "DATABASE_URI", "postgresql://postgres:postgres@localhost:5432/postgres"
+    "DATABASE_URI_TEST", "postgresql://postgres:postgres@localhost:5432/test_db"
 )
-
 BASE_URL = "/accounts"
-
 
 ######################################################################
 #  T E S T   C A S E S
@@ -37,23 +34,22 @@ class TestAccountService(TestCase):
 
     @classmethod
     def tearDownClass(cls):
-        """Runs once before test suite"""
+        """Runs once after all tests"""
+        pass
 
     def setUp(self):
         """Runs before each test"""
-        db.session.query(Account).delete()  # clean up the last tests
-        db.session.commit()
-
+        db.drop_all()
+        db.create_all()
         self.client = app.test_client()
 
     def tearDown(self):
-        """Runs once after each test case"""
+        """Runs after each test case"""
         db.session.remove()
 
     ######################################################################
     #  H E L P E R   M E T H O D S
     ######################################################################
-
     def _create_accounts(self, count):
         """Factory method to create accounts in bulk"""
         accounts = []
@@ -73,7 +69,6 @@ class TestAccountService(TestCase):
     ######################################################################
     #  A C C O U N T   T E S T   C A S E S
     ######################################################################
-
     def test_index(self):
         """It should get 200_OK from the Home Page"""
         response = self.client.get("/")
@@ -92,14 +87,12 @@ class TestAccountService(TestCase):
         response = self.client.post(
             BASE_URL,
             json=account.serialize(),
-            content_type="application/json"
+            content_type="application/json",
         )
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-
         # Make sure location header is set
         location = response.headers.get("Location", None)
         self.assertIsNotNone(location)
-
         # Check the data is correct
         new_account = response.get_json()
         self.assertEqual(new_account["name"], account.name)
@@ -112,6 +105,9 @@ class TestAccountService(TestCase):
         """It should not Create an Account when sending the wrong data"""
         response = self.client.post(BASE_URL, json={"name": "not enough data"})
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        data = response.get_json()
+        self.assertIn("error", data)
+        self.assertIn("Invalid request body", data["error"])
 
     def test_unsupported_media_type(self):
         """It should not Create an Account when sending the wrong media type"""
@@ -119,20 +115,25 @@ class TestAccountService(TestCase):
         response = self.client.post(
             BASE_URL,
             json=account.serialize(),
-            content_type="test/html"
+            content_type="test/html",
         )
         self.assertEqual(response.status_code, status.HTTP_415_UNSUPPORTED_MEDIA_TYPE)
+        data = response.get_json()
+        self.assertIn("error", data)
+        self.assertIn("Content-Type must be application/json", data["error"])
 
     def test_get_account(self):
         """It should Read a single Account"""
         account = self._create_accounts(1)[0]
-        resp = self.client.get(
-            f"{BASE_URL}/{account.id}", content_type="application/json"
-        )
+        resp = self.client.get(f"{BASE_URL}/{account.id}", content_type="application/json")
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         data = resp.get_json()
         self.assertEqual(data["name"], account.name)
-    list-function
+
+    def test_get_account_not_found(self):
+        """It should return 404 when trying to read a non-existent account"""
+        resp = self.client.get(f"{BASE_URL}/0")  # Assuming ID 0 does not exist
+        self.assertEqual(resp.status_code, status.HTTP_404_NOT_FOUND)
 
     def test_get_account_list(self):
         """It should Get a list of Accounts"""
@@ -141,7 +142,6 @@ class TestAccountService(TestCase):
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         data = resp.get_json()
         self.assertEqual(len(data), 5)
-    update-function
 
     def test_update_account(self):
         """It should Update an existing Account"""
@@ -149,7 +149,6 @@ class TestAccountService(TestCase):
         test_account = AccountFactory()
         resp = self.client.post(BASE_URL, json=test_account.serialize())
         self.assertEqual(resp.status_code, status.HTTP_201_CREATED)
-
         # update the account
         new_account = resp.get_json()
         new_account["name"] = "Something Known"
@@ -157,12 +156,27 @@ class TestAccountService(TestCase):
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         updated_account = resp.get_json()
         self.assertEqual(updated_account["name"], "Something Known")
-    delete-function
+
+    def test_update_account_not_found(self):
+        """It should return 404 when trying to update a non-existent account"""
+        resp = self.client.put(f"{BASE_URL}/0", json={"name": "Non-existent"})
+        self.assertEqual(resp.status_code, status.HTTP_404_NOT_FOUND)
 
     def test_delete_account(self):
         """It should Delete an Account"""
         account = self._create_accounts(1)[0]
         resp = self.client.delete(f"{BASE_URL}/{account.id}")
         self.assertEqual(resp.status_code, status.HTTP_204_NO_CONTENT)
-        
-    main
+
+    def test_delete_account_not_found(self):
+        """It should return 404 when trying to delete a non-existent account"""
+        resp = self.client.delete(f"{BASE_URL}/0")
+        self.assertEqual(resp.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_list_accounts_with_pagination(self):
+        """It should paginate the list of Accounts"""
+        self._create_accounts(15)  # Assuming default page size is 10
+        resp = self.client.get(f"{BASE_URL}?page=1&per_page=10")
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        data = resp.get_json()
+        self.assertEqual(len(data), 10)

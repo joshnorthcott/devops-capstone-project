@@ -61,9 +61,9 @@ def create_accounts():
 # LIST ALL ACCOUNTS
 ######################################################################
 
- list-function
-    @app.route("/accounts", methods=["GET"])
-    def list_accounts():
+list-function
+@app.route("/accounts", methods=["GET"])
+def list_accounts():
         """
         List all Accounts
         This endpoint will list all Accounts
@@ -73,25 +73,19 @@ def create_accounts():
         account_list = [account.serialize() for account in accounts]
         app.logger.info("Returning [%s] accounts", len(account_list))
         return jsonify(account_list), status.HTTP_200_OK
- update-function
-
-=======
+update-function
         
-=======
-
-
- main
- main
+main
 
 ######################################################################
 # READ AN ACCOUNT
 ######################################################################
 
- list-function
-    @app.route("/accounts/<int:account_id>", methods=["GET"])
-=======
-    app.route("/accounts/<int:account_id>", methods=["GET"])
- main
+list-function
+@app.route("/accounts/<int:account_id>", methods=["GET"])
+
+app.route("/accounts/<int:account_id>", methods=["GET"])
+main
     def get_accounts(account_id):
         """
         Reads an Account
@@ -108,8 +102,8 @@ def create_accounts():
 # UPDATE AN EXISTING ACCOUNT
 ######################################################################
 
-    @app.route("/accounts/<int:account_id>", methods=["PUT"])
-    def update_accounts(account_id):
+@app.route("/accounts/<int:account_id>", methods=["PUT"])
+def update_accounts(account_id):
         """
         Update an Account
         This endpoint will update an Account based on the posted data
@@ -127,8 +121,8 @@ def create_accounts():
 # DELETE AN ACCOUNT
 ######################################################################
 
-    @app.route("/accounts/<int:account_id>", methods=["DELETE"])
-    def delete_accounts(account_id):
+@app.route("/accounts/<int:account_id>", methods=["DELETE"])
+def delete_accounts(account_id):
         """
         Delete an Account
         This endpoint will delete an Account based on the account_id that is requested
@@ -143,7 +137,6 @@ def create_accounts():
 ######################################################################
 #  U T I L I T Y   F U N C T I O N S
 ######################################################################
-
 
 def check_content_type(media_type):
     """Checks that the media type is correct"""
